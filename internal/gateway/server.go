@@ -83,6 +83,9 @@ func newReverseProxy(target *url.URL) *httputil.ReverseProxy {
 			requestID := getOrGenerateRequestID(pr.In)
 			pr.Out.Header.Set(headerXRequestID, requestID)
 		},
+		Transport: &httpTransport{
+			next: http.DefaultTransport,
+		},
 	}
 }
 
@@ -90,6 +93,7 @@ func newIPProtectedHandler(checker IPChecker, proxy *httputil.ReverseProxy, head
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get or generate a request ID for logging and forwarding.
 		requestID := getOrGenerateRequestID(r)
+		r.Header.Set(headerXRequestID, requestID)
 
 		ctx := slogm.ContextWithRequestID(r.Context(), requestID)
 		r = r.WithContext(ctx)
