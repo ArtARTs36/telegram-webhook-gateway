@@ -94,6 +94,14 @@ func newIPProtectedHandler(checker IPChecker, proxy *httputil.ReverseProxy, head
 		ctx := slogm.ContextWithRequestID(r.Context(), requestID)
 		r = r.WithContext(ctx)
 
+		slog.InfoContext(ctx, "handling request", slog.String("remote_addr", r.RemoteAddr))
+
+		if r.Method != http.MethodPost {
+			slog.WarnContext(ctx, "unallowed method", slog.String("remote_addr", r.RemoteAddr), slog.String("method", r.Method))
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+
 		ip := getClientIP(r, headers)
 		if ip == nil {
 			slog.WarnContext(ctx, "unable to determine client IP", "remote_addr", r.RemoteAddr)
