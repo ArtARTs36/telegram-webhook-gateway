@@ -1,0 +1,16 @@
+services:
+  telegram-webhook-gateway:
+    image: golang:1.26.0-alpine
+    volumes:
+      - ./:/app
+    working_dir: /app
+    ports:
+      - 8200:8080
+    environment:
+      - TWG_HTTP_ADDR=:8080
+      - TWG_TARGET_URL=https://domain.com
+      - TWG_IP_HEADERS=X-Real-Ip
+    command:
+      - go
+      - run
+      - ./cmd/telegram-webhook-gateway/main.go
