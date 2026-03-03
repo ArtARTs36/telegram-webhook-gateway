@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/artarts36/telegram-webhook-gateway/internal/config"
@@ -124,24 +123,4 @@ func newIPProtectedHandler(checker IPChecker, proxy *httputil.ReverseProxy, head
 
 		proxy.ServeHTTP(w, r) // #nosec G704 - upstream target is fixed at startup and not user-controlled
 	})
-}
-
-func getClientIP(r *http.Request, headers []string) net.IP {
-	for _, header := range headers {
-		parts := strings.Split(r.Header.Get(header), ",")
-		if len(parts) > 0 {
-			ip := net.ParseIP(strings.TrimSpace(parts[0]))
-			if ip != nil {
-				return ip
-			}
-		}
-	}
-
-	// As a last resort, use RemoteAddr.
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return nil
-	}
-
-	return net.ParseIP(host)
 }
