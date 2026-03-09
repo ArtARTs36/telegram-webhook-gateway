@@ -3,7 +3,6 @@ package cidr
 import (
 	"context"
 	"log/slog"
-	"sync"
 	"time"
 )
 
@@ -17,7 +16,6 @@ type PeriodicUpdater struct {
 	fetcher    Fetcher
 	interval   time.Duration
 	timeout    time.Duration
-	once       sync.Once
 	updatedCh  chan struct{}
 	updateDone chan struct{}
 }
@@ -37,22 +35,20 @@ func NewPeriodicUpdater(store *Store, fetcher Fetcher, interval time.Duration) *
 // Start launches the periodic CIDR update loop.
 // The first load is performed synchronously so the gateway starts with up-to-date data.
 func (u *PeriodicUpdater) Start() {
-	u.once.Do(func() {
-		// initial load
-		if err := u.updateOnce(); err != nil {
-			slog.Default().ErrorContext(context.Background(), "initial CIDR update failed", "err", err)
-		}
+	// initial load
+	if err := u.updateOnce(); err != nil {
+		slog.Default().ErrorContext(context.Background(), "initial CIDR update failed", "err", err)
+	}
 
-		ticker := time.NewTicker(u.interval)
-		go func() {
-			defer close(u.updateDone)
-			for range ticker.C {
-				if err := u.updateOnce(); err != nil {
-					slog.Default().ErrorContext(context.Background(), "periodic CIDR update failed", "err", err)
-				}
+	ticker := time.NewTicker(u.interval)
+	go func() {
+		defer close(u.updateDone)
+		for range ticker.C {
+			if err := u.updateOnce(); err != nil {
+				slog.Default().ErrorContext(context.Background(), "periodic CIDR update failed", "err", err)
 			}
-		}()
-	})
+		}
+	}()
 }
 
 func (u *PeriodicUpdater) updateOnce() error {
