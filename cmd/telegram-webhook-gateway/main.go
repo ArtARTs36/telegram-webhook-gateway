@@ -9,6 +9,7 @@ import (
 	"github.com/artarts36/telegram-webhook-gateway/internal/cidr"
 	"github.com/artarts36/telegram-webhook-gateway/internal/config"
 	"github.com/artarts36/telegram-webhook-gateway/internal/gateway"
+	"github.com/artarts36/telegram-webhook-gateway/internal/ipchecker"
 	"github.com/cappuccinotm/slogx"
 	"github.com/cappuccinotm/slogx/slogm"
 )
@@ -40,7 +41,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	srv := gateway.NewServer(cfg, store)
+	var ipChecker ipchecker.Checker = store
+	if len(cfg.StaticIPs) > 0 {
+		ipChecker = ipchecker.Wrap(store, &ipchecker.Static{IPs: cfg.StaticIPs})
+	}
+
+	srv := gateway.NewServer(cfg, ipChecker)
 
 	entrypoints := entrypoint.NewRunner([]entrypoint.Entrypoint{
 		{

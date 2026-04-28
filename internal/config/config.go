@@ -17,6 +17,8 @@ type Config struct {
 		URL specw.URL `env:"URL,required,notEmpty"`
 	} `envPrefix:"TARGET_"`
 
+	StaticIPs []string `env:"STATIC_IPS"`
+
 	// Telegram is the configuration related to working with Telegram.
 	Telegram TelegramConfig `envPrefix:"TELEGRAM_"`
 

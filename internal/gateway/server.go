@@ -3,13 +3,13 @@ package gateway
 import (
 	"context"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
 
 	"github.com/artarts36/telegram-webhook-gateway/internal/config"
+	"github.com/artarts36/telegram-webhook-gateway/internal/ipchecker"
 	"github.com/cappuccinotm/slogx/slogm"
 	"github.com/google/uuid"
 )
@@ -21,10 +21,6 @@ const (
 	defaultWriteTimeout = 15 * time.Second
 )
 
-type IPChecker interface {
-	Contains(ip net.IP) bool
-}
-
 // Server encapsulates the HTTP gateway server.
 type Server struct {
 	cfg        config.Config
@@ -32,7 +28,7 @@ type Server struct {
 }
 
 // NewServer creates and configures the HTTP server.
-func NewServer(cfg config.Config, provider IPChecker) *Server {
+func NewServer(cfg config.Config, provider ipchecker.Checker) *Server {
 	proxy := newReverseProxy(&cfg.Target.URL.Value)
 	handler := newIPProtectedHandler(provider, proxy, cfg.IPHeaders)
 
@@ -92,7 +88,7 @@ func newReverseProxy(target *url.URL) *httputil.ReverseProxy {
 	}
 }
 
-func newIPProtectedHandler(checker IPChecker, proxy *httputil.ReverseProxy, headers []string) http.Handler {
+func newIPProtectedHandler(checker ipchecker.Checker, proxy *httputil.ReverseProxy, headers []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get or generate a request ID for logging and forwarding.
 		requestID := getOrGenerateRequestID(r)
