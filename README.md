@@ -17,4 +17,5 @@ services:
       - TWG_HTTP_ADDR=:8080
       - TWG_TARGET_URL=https://domain.com
       - TWG_IP_HEADERS=X-Real-Ip
+      # - TWG_TELEGRAM_PROXY=/run/secrets/telegram-proxy
 ```

@@ -60,6 +60,10 @@ func (s *Server) Run(ctx context.Context) error {
 	return s.httpServer.ListenAndServe()
 }
 
+func (s *Server) Stop(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
+}
+
 func getOrGenerateRequestID(r *http.Request) string {
 	requestID := r.Header.Get(headerXRequestID)
 	if requestID == "" {

@@ -2,11 +2,16 @@ package cidr
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/artarts36/telegram-webhook-gateway/internal/config"
+	"golang.org/x/net/proxy"
 )
 
 // Fetcher describes an abstraction for fetching a CIDR list.
@@ -20,11 +25,47 @@ type HTTPFetcher struct {
 	url    string
 }
 
-func NewHTTPFetcher(url string) *HTTPFetcher {
-	return &HTTPFetcher{
-		client: &http.Client{},
-		url:    url,
+func NewHTTPFetcher(cfg config.TelegramConfig) (*HTTPFetcher, error) {
+	httpClient, err := buildHTTPClient(cfg.Proxy.Value.Socks5.Address)
+	if err != nil {
+		return nil, fmt.Errorf("build http client: %w", err)
 	}
+
+	return &HTTPFetcher{
+		client: httpClient,
+		url:    cfg.CIDRURL,
+	}, nil
+}
+
+func buildHTTPClient(socks5Address string) (*http.Client, error) {
+	client := &http.Client{}
+	if socks5Address == "" {
+		return client, nil
+	}
+
+	dialer, err := proxy.SOCKS5("tcp", socks5Address, nil, proxy.Direct)
+	if err != nil {
+		return nil, fmt.Errorf("build socks5 dialer: %w", err)
+	}
+
+	transport := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		IdleConnTimeout:       time.Minute,
+		TLSHandshakeTimeout:   time.Minute,
+		ExpectContinueTimeout: time.Minute,
+	}
+
+	if contextDialer, ok := dialer.(proxy.ContextDialer); ok {
+		transport.DialContext = contextDialer.DialContext
+	} else {
+		transport.DialContext = func(_ context.Context, network, address string) (net.Conn, error) {
+			return dialer.Dial(network, address)
+		}
+	}
+
+	client.Transport = transport
+
+	return client, nil
 }
 
 // Fetch downloads and parses the list of CIDRs.

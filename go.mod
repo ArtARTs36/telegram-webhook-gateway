@@ -4,10 +4,11 @@ go 1.26
 
 require (
 	github.com/artarts36/go-entrypoint v0.2.0
-	github.com/artarts36/specw v0.1.4
+	github.com/artarts36/specw v0.1.7
 	github.com/caarlos0/env/v11 v11.4.0
 	github.com/cappuccinotm/slogx v1.5.0
 	github.com/google/uuid v1.6.0
+	golang.org/x/net v0.48.0
 )
 
 require (

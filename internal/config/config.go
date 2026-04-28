@@ -36,6 +36,14 @@ type TelegramConfig struct {
 	// CIDRUpdateInterval is how often (in seconds) to refresh the CIDR list.
 	// We use int so it can be read from env conveniently.
 	CIDRUpdateInterval specw.Duration `env:"CIDR_UPDATE_INTERVAL" envDefault:"24h"`
+
+	Proxy specw.JSONFile[TelegramProxyConfig] `env:"PROXY"`
+}
+
+type TelegramProxyConfig struct {
+	Socks5 struct {
+		Address string `json:"address"`
+	} `json:"socks5"`
 }
 
 // Load loads configuration from environment variables.
@@ -44,13 +52,6 @@ func Load() (Config, error) {
 	if err := env.ParseWithOptions(&cfg, env.Options{
 		Prefix: "TWG_",
 		FuncMap: map[reflect.Type]env.ParserFunc{
-			reflect.TypeOf(specw.Duration{}): func(s string) (interface{}, error) {
-				dur := specw.Duration{}
-				if err := dur.UnmarshalString(s); err != nil {
-					return nil, err
-				}
-				return dur, nil
-			},
 			reflect.TypeOf(specw.URL{}): func(s string) (interface{}, error) {
 				u := specw.URL{}
 				if err := u.UnmarshalString(s); err != nil {

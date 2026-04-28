@@ -28,10 +28,17 @@ func main() {
 	}), slogm.RequestID())))
 
 	store := cidr.NewStore()
-	fetcher := cidr.NewHTTPFetcher(cfg.Telegram.CIDRURL)
+	fetcher, err := cidr.NewHTTPFetcher(cfg.Telegram)
+	if err != nil {
+		slog.ErrorContext(ctx, "[main] failed to init cidr fetcher", slog.Any("err", err))
+		os.Exit(1)
+	}
 
 	updater := cidr.NewPeriodicUpdater(store, fetcher, cfg.Telegram.CIDRUpdateInterval.Value)
-	updater.Start()
+	if err = updater.Update(ctx); err != nil {
+		slog.ErrorContext(ctx, "[main] failed to init update cidr", slog.Any("err", err))
+		os.Exit(1)
+	}
 
 	srv := gateway.NewServer(cfg, store)
 
@@ -39,6 +46,18 @@ func main() {
 		{
 			Name: "http",
 			Run:  srv.Run,
+			Stop: srv.Stop,
+		},
+		{
+			Name: "cidr-updater",
+			Run: func(context.Context) error {
+				updater.Run()
+				return nil
+			},
+			Stop: func(context.Context) error {
+				updater.Stop()
+				return nil
+			},
 		},
 	})
 
